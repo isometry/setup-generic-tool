@@ -1,0 +1,23 @@
+name: setup-tool
+description: "Setup arbitrary tools from GitHub Releases or cache"
+author: "isometry"
+inputs:
+  name:
+    description: "Tool name"
+    required: true
+  version:
+    description: "Version of tool to install"
+    required: false
+    default: "latest"
+  owner:
+    description: "Owner of the tool repository"
+    required: true
+  repo:
+    description: "Tool repository (defaults to `tool` if not given)"
+    required: false
+outputs:
+  version:
+    description: "Version of tool installed"
+runs:
+  using: "node20"
+  main: "dist/index.js"

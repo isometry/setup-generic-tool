@@ -1,0 +1,32 @@
+{
+  "name": "setup-tool",
+  "version": "1.0.0",
+  "description": "Setup tools from GitHub Releases for use in GitHub Actions",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && ncc build src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "isometry",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/tool-cache": "^2.0.1",
+    "@octokit/rest": "^21.0.2",
+    "os": "^0.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.3",
+    "@vercel/ncc": "^0.38.2",
+    "typescript": "^5.6.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isometry/setup-tool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/isometry/setup-tool/issues"
+  },
+  "homepage": "https://github.com/isometry/setup-tool"
+}
