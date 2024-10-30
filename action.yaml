@@ -15,10 +15,6 @@ inputs:
   repo:
     description: "Tool repository (defaults to 'name' if not given)"
     required: false
-  archive:
-    description: "Archive format ('' implies uncompressed binary; e.g. 'zip', 'tar.gz', '7z' or 'xar')"
-    required: false
-    default: ""
 outputs:
   version:
     description: "Version of tool installed"

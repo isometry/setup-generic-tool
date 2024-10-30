@@ -33792,7 +33792,6 @@ async function main() {
             version: core.getInput('version'),
             owner: core.getInput('owner'),
             repo: core.getInput('repo'),
-            archive: core.getInput('archive'),
         };
         if (!inputs.name) {
             throw new Error('Missing required input: name');
@@ -33808,20 +33807,23 @@ async function main() {
             core.info('repo not provided, using name as repo');
             inputs.repo = inputs.name;
         }
-        let archive = inputs.archive;
-        if (archive) {
-            archive = archive.toLowerCase();
-            if (!archive.startsWith('.')) {
-                archive = '.' + archive;
-            }
-            core.info(`Using archive suffix: '${archive}'`);
-        }
-        const version = (inputs.version === 'latest')
-            ? await github.repos.getLatestRelease({
+        let release;
+        let version = inputs.version;
+        if (version === 'latest') {
+            release = await github.repos.getLatestRelease({
                 owner: inputs.owner,
                 repo: inputs.repo,
-            }).then(res => res.data.tag_name)
-            : inputs.version;
+            });
+            version = release.data.tag_name;
+            core.info(`Resolved latest version: ${version}`);
+        }
+        else {
+            release = await github.repos.getReleaseByTag({
+                owner: inputs.owner,
+                repo: inputs.repo,
+                tag: inputs.version,
+            });
+        }
         let toolPath = tc.find(inputs.name, version);
         if (!toolPath) {
             const platform = os.platform();
@@ -33829,39 +33831,42 @@ async function main() {
             if (arch === 'x64') {
                 arch = 'amd64';
             }
-            const toolUrl = `https://github.com/${inputs.owner}/${inputs.repo}/releases/download/${version}/${inputs.name}_${version.slice(1)}_${platform}_${arch}${archive}`;
+            const assetRegex = new RegExp(`^${inputs.name}.+${platform}.+${arch}([.](zip|tar[.]gz))?$`, 'i');
+            let matchingAssets = release.data.assets.filter(asset => assetRegex.test(asset.name));
+            if (matchingAssets.length !== 1) {
+                core.info(`All release assets: [${release.data.assets.map(asset => asset.name).join(', ')}]`);
+                throw new Error(`Expected exactly one matching asset, but found ${matchingAssets.length}`);
+            }
+            const asset = matchingAssets[0];
+            let archive = '';
+            const archiveMatch = asset.name.match(/\.(zip|tar\.gz)$/);
+            if (archiveMatch) {
+                archive = archiveMatch[1];
+            }
+            core.info(`Found release asset: '${asset.browser_download_url}'`);
+            const toolUrl = asset.browser_download_url;
             core.info(`Downloading ${inputs.name} from ${toolUrl}`);
             const toolArchive = await tc.downloadTool(toolUrl);
             let extractPath = toolArchive;
-            if (archive === '') {
-            }
-            else if (archive === '.zip') {
+            if (archive === 'zip') {
                 core.info(`Extracting zip archive: ${toolArchive}`);
                 extractPath = await tc.extractZip(toolArchive);
             }
-            else if (archive === '.tar.gz') {
+            else if (archive === 'tar.gz') {
                 core.info(`Extracting tar.gz archive: ${toolArchive}`);
                 extractPath = await tc.extractTar(toolArchive, '', ['xz', '--strip-components=1']);
             }
-            else if (archive === '.7z') {
-                core.info(`Extracting 7z archive: ${toolArchive}`);
-                extractPath = await tc.extract7z(toolArchive);
-            }
-            else if (archive === '.xar') {
-                core.info(`Extracting xar archive: ${toolArchive}`);
-                extractPath = await tc.extractXar(toolArchive);
-            }
-            else {
+            else if (archive !== '') {
                 throw new Error(`Unsupported archive format: ${archive}`);
             }
-            toolPath = await tc.cacheFile(`${extractPath}/${inputs.name}`, inputs.name, inputs.name, version);
+            toolPath = await tc.cacheFile(`${extractPath} / ${inputs.name}`, inputs.name, inputs.name, version);
         }
         core.addPath(toolPath);
         core.setOutput('version', version);
         core.info(`Installed ${inputs.name} version ${version}`);
     }
     catch (err) {
-        core.setFailed(`Action failed with error ${err}`);
+        core.setFailed(`Action failed with error ${err} `);
     }
 }
 
