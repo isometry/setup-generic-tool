@@ -50,6 +50,7 @@ jobs:
           tool: apko
           version: v0.19.6 # default: latest
           owner: chainguard-dev
+          archive: tar.gz
 
       - run: |
           apko publish example.yaml example:latest

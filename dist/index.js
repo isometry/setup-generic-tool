@@ -33792,6 +33792,7 @@ async function main() {
             version: core.getInput('version'),
             owner: core.getInput('owner'),
             repo: core.getInput('repo'),
+            archive: core.getInput('archive'),
         };
         if (!inputs.name) {
             throw new Error('Missing required input: name');
@@ -33807,6 +33808,14 @@ async function main() {
             core.info('repo not provided, using name as repo');
             inputs.repo = inputs.name;
         }
+        let archive = inputs.archive;
+        if (archive) {
+            archive = archive.toLowerCase();
+            if (!archive.startsWith('.')) {
+                archive = '.' + archive;
+            }
+            core.info(`Using archive suffix: '${archive}'`);
+        }
         const version = (inputs.version === 'latest')
             ? await github.repos.getLatestRelease({
                 owner: inputs.owner,
@@ -33820,10 +33829,31 @@ async function main() {
             if (arch === 'x64') {
                 arch = 'amd64';
             }
-            const toolUrl = `https://github.com/${inputs.owner}/${inputs.repo}/releases/download/${version}/${inputs.name}_${version.slice(1)}_${platform}_${arch}.zip`;
+            const toolUrl = `https://github.com/${inputs.owner}/${inputs.repo}/releases/download/${version}/${inputs.name}_${version.slice(1)}_${platform}_${arch}${archive}`;
             core.info(`Downloading ${inputs.name} from ${toolUrl}`);
-            const toolZip = await tc.downloadTool(toolUrl);
-            const extractPath = await tc.extractZip(toolZip);
+            const toolArchive = await tc.downloadTool(toolUrl);
+            let extractPath = toolArchive;
+            if (archive === '') {
+            }
+            else if (archive === '.zip') {
+                core.info(`Extracting zip archive: ${toolArchive}`);
+                extractPath = await tc.extractZip(toolArchive);
+            }
+            else if (archive === '.tar.gz') {
+                core.info(`Extracting tar.gz archive: ${toolArchive}`);
+                extractPath = await tc.extractTar(toolArchive, '', ['xz', '--strip-components=1']);
+            }
+            else if (archive === '.7z') {
+                core.info(`Extracting 7z archive: ${toolArchive}`);
+                extractPath = await tc.extract7z(toolArchive);
+            }
+            else if (archive === '.xar') {
+                core.info(`Extracting xar archive: ${toolArchive}`);
+                extractPath = await tc.extractXar(toolArchive);
+            }
+            else {
+                throw new Error(`Unsupported archive format: ${archive}`);
+            }
             toolPath = await tc.cacheFile(`${extractPath}/${inputs.name}`, inputs.name, inputs.name, version);
         }
         core.addPath(toolPath);
