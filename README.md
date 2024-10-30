@@ -45,13 +45,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - uses: isometry/setup-tool@main
+      - uses: isometry/setup-tool@v1
         with:
-          tool: apko
+          name: apko
           version: v0.19.6 # default: latest
           owner: chainguard-dev
           archive: tar.gz
 
       - run: |
-          apko publish example.yaml example:latest
+          apko version
 ```
