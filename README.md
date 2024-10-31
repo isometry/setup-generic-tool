@@ -29,17 +29,14 @@ The version of tool actually installed.
 ## Example usage
 
 ```yaml
-name: autobuild
+name: example
 
 on:
   push:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
-  autobuild:
+  example:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
