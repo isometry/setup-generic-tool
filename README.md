@@ -48,9 +48,7 @@ jobs:
       - uses: isometry/setup-tool@v1
         with:
           name: apko
-          version: v0.19.6 # default: latest
           owner: chainguard-dev
-          archive: tar.gz
 
       - run: |
           apko version
