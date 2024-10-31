@@ -1,0 +1,28 @@
+name: autobuild
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  autobuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - uses: nexthink-oss/ghup/actions/setup@main
+
+      - name: Build
+        run: npm ci && npm run build
+
+      - name: Idempotently commit updated artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GHUP_BRANCH: ${{ github.head_ref }}
+          GHUP_MESSAGE: "ci: autobuild #${{ github.event.pull_request.number }}"
+          GHUP_TRAILER: '{"Build-Logs": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
+        run: ghup content dist/*
