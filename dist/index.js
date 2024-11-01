@@ -33789,49 +33789,58 @@ async function main() {
     try {
         const inputs = {
             name: core.getInput('name'),
-            version: core.getInput('version'),
-            owner: core.getInput('owner'),
-            repo: core.getInput('repo'),
+            tool: core.getInput('tool'),
+            version: core.getInput('version') || 'latest',
         };
         if (!inputs.name) {
             throw new Error('Missing required input: name');
         }
-        if (!inputs.version) {
-            core.info('version not provided, using latest');
-            inputs.version = 'latest';
+        const [owner, repo] = inputs.name.split('/', 2);
+        if (!owner || !repo) {
+            throw new Error('Invalid repository name');
         }
-        if (!inputs.owner) {
-            throw new Error('Missing required input: owner');
-        }
-        if (!inputs.repo) {
-            core.info('repo not provided, using name as repo');
-            inputs.repo = inputs.name;
+        const tool = inputs.tool || repo;
+        if (!/^[-A-Za-z0-9]+$/.test(tool)) {
+            throw new Error('Invalid tool name');
         }
         let release;
         let version = inputs.version;
         if (version === 'latest') {
             release = await github.repos.getLatestRelease({
-                owner: inputs.owner,
-                repo: inputs.repo,
+                owner: owner,
+                repo: repo,
             });
             version = release.data.tag_name;
             core.info(`Resolved latest version: ${version}`);
         }
         else {
             release = await github.repos.getReleaseByTag({
-                owner: inputs.owner,
-                repo: inputs.repo,
-                tag: inputs.version,
+                owner: owner,
+                repo: repo,
+                tag: version,
             });
         }
-        let toolPath = tc.find(inputs.name, version);
+        let toolPath = tc.find(tool, version);
         if (!toolPath) {
             const platform = os.platform();
             let arch = os.arch();
-            if (arch === 'x64') {
-                arch = 'amd64';
+            switch (arch) {
+                case 'arm':
+                    arch = '(arm|arm32)';
+                    break;
+                case 'arm64':
+                    arch = '(aarch64|arm64)';
+                    break;
+                case 'ia32':
+                    arch = '(x32|x86)';
+                    break;
+                case 'x64':
+                    arch = '(amd64|x64|x86_64)';
+                    break;
+                default:
+                    break;
             }
-            const assetRegex = new RegExp(`^${inputs.name}.+${platform}.+${arch}([.](zip|tar[.]gz))?$`, 'i');
+            const assetRegex = new RegExp(`^${tool}.+${platform}.+${arch}([.](zip|tar[.]gz))?$`, 'i');
             let matchingAssets = release.data.assets.filter(asset => assetRegex.test(asset.name));
             if (matchingAssets.length !== 1) {
                 core.info(`All release assets: [${release.data.assets.map(asset => asset.name).join(', ')}]`);
@@ -33845,25 +33854,28 @@ async function main() {
             }
             core.info(`Found release asset: '${asset.browser_download_url}'`);
             const toolUrl = asset.browser_download_url;
-            core.info(`Downloading ${inputs.name} from ${toolUrl}`);
+            core.info(`Downloading ${tool} from ${toolUrl}`);
             const toolArchive = await tc.downloadTool(toolUrl);
             let extractPath = toolArchive;
-            if (archive === 'zip') {
-                core.info(`Extracting zip archive: ${toolArchive}`);
-                extractPath = await tc.extractZip(toolArchive);
+            switch (archive) {
+                case '':
+                    break;
+                case 'zip':
+                    core.info(`Extracting zip archive: ${toolArchive}`);
+                    extractPath = await tc.extractZip(toolArchive);
+                    break;
+                case 'tar.gz':
+                    core.info(`Extracting tar.gz archive: ${toolArchive}`);
+                    extractPath = await tc.extractTar(toolArchive, '', ['xz', '--strip-components=1']);
+                    break;
+                default:
+                    throw new Error(`Unsupported archive format: ${archive}`);
             }
-            else if (archive === 'tar.gz') {
-                core.info(`Extracting tar.gz archive: ${toolArchive}`);
-                extractPath = await tc.extractTar(toolArchive, '', ['xz', '--strip-components=1']);
-            }
-            else if (archive !== '') {
-                throw new Error(`Unsupported archive format: ${archive}`);
-            }
-            toolPath = await tc.cacheFile(`${extractPath} / ${inputs.name}`, inputs.name, inputs.name, version);
+            toolPath = await tc.cacheFile(`${extractPath} / ${tool}`, tool, tool, version);
         }
         core.addPath(toolPath);
         core.setOutput('version', version);
-        core.info(`Installed ${inputs.name} version ${version}`);
+        core.info(`Installed ${tool} version ${version}`);
     }
     catch (err) {
         core.setFailed(`Action failed with error ${err} `);
