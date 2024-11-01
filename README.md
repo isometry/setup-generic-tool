@@ -1,24 +1,25 @@
-# `setup` action
+# `setup-generic-tool` action
 
-The `isometry/setup-tool` action is designed to make the use of third-party tooling available via GitHub Releases as simple, streamlined and performant as possible within your workflows.
+The `isometry/setup-generic-tool` action is designed to make the use of generic third-party tooling available via GitHub Releases as simple, streamlined and performant as possible within your workflows.
+
+## Features
+
+* Fully exploits GitHub Runners' Tool Cache mechanism
+* Automatic version resolution
 
 ## Inputs
 
 ### `name` input
 
-**Required** tool name
+**Required** GitHub repository of the desired tool (example: `owner/repo`)
+
+### `tool` input
+
+**Optional** Override tool name, if it doesn't match the repo name
 
 ### `version` input
 
-**Optional** version of tool to install (default: `"latest"`)
-
-### `owner` input
-
-**Required** owner of the tool repository
-
-### `repo` input
-
-**Optional** tool repository (defaults to `name`)
+**Optional** Version of tool to install (default: `latest`; example: `v1.2.3`)
 
 ## Outputs
 
@@ -42,10 +43,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - uses: isometry/setup-tool@v1
+      - uses: isometry/setup-generic-tool@v1
         with:
-          name: apko
-          owner: chainguard-dev
+          name: chainguard-dev/apko
 
       - run: |
           apko version

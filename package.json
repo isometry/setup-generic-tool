@@ -1,5 +1,5 @@
 {
-  "name": "setup-tool",
+  "name": "setup-generic-tool",
   "version": "1.0.0",
   "description": "Setup tools from GitHub Releases for use in GitHub Actions",
   "main": "dist/index.js",
@@ -23,10 +23,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/isometry/setup-tool.git"
+    "url": "git+https://github.com/isometry/setup-generic-tool.git"
   },
   "bugs": {
-    "url": "https://github.com/isometry/setup-tool/issues"
+    "url": "https://github.com/isometry/setup-generic-tool/issues"
   },
-  "homepage": "https://github.com/isometry/setup-tool"
+  "homepage": "https://github.com/isometry/setup-generic-tool"
 }
