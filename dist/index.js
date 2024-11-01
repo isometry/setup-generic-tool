@@ -33871,7 +33871,7 @@ async function main() {
                 default:
                     throw new Error(`Unsupported archive format: ${archive}`);
             }
-            toolPath = await tc.cacheFile(`${extractPath} / ${tool}`, tool, tool, version);
+            toolPath = await tc.cacheFile(`${extractPath}/${tool}`, tool, tool, version);
         }
         core.addPath(toolPath);
         core.setOutput('version', version);

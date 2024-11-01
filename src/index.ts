@@ -115,7 +115,7 @@ async function main(): Promise<void> {
                     throw new Error(`Unsupported archive format: ${archive}`);
             }
 
-            toolPath = await tc.cacheFile(`${extractPath} / ${tool}`, tool, tool, version);
+            toolPath = await tc.cacheFile(`${extractPath}/${tool}`, tool, tool, version);
         }
 
         core.addPath(toolPath);
