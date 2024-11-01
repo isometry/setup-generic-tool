@@ -33778,6 +33778,8 @@ const core = __nccwpck_require__(7484);
 const tc = __nccwpck_require__(3472);
 const os = __nccwpck_require__(857);
 const rest_1 = __nccwpck_require__(9380);
+const fs = __nccwpck_require__(9896);
+const path = __nccwpck_require__(6928);
 const github = new rest_1.Octokit();
 if (require.main === require.cache[eval('__filename')]) {
     main().catch(err => {
@@ -33820,8 +33822,8 @@ async function main() {
                 tag: version,
             });
         }
-        let toolPath = tc.find(tool, version);
-        if (!toolPath) {
+        let cachePath = tc.find(tool, version);
+        if (!cachePath) {
             const platform = os.platform();
             let arch = os.arch();
             switch (arch) {
@@ -33832,28 +33834,35 @@ async function main() {
                     arch = '(aarch64|arm64)';
                     break;
                 case 'ia32':
-                    arch = '(x32|x86)';
+                    arch = '(32bit|x32|x86)';
                     break;
                 case 'x64':
-                    arch = '(amd64|x64|x86_64)';
+                    arch = '(64bit|amd64|x64|x86_64)';
                     break;
                 default:
                     break;
             }
-            const assetRegex = new RegExp(`^${tool}.+${platform}.+${arch}([.](zip|tar[.]gz))?$`, 'i');
-            let matchingAssets = release.data.assets.filter(asset => assetRegex.test(asset.name));
+            const assetRegex = new RegExp(`^${tool}.+${platform}.+${arch}[.](?<archive>tar[.]gz|zip)$`, 'i');
+            const matchingAssets = release.data.assets
+                .map(asset => {
+                const match = asset.name.match(assetRegex);
+                if (match && match.groups) {
+                    return {
+                        url: asset.browser_download_url,
+                        archive: match.groups.archive
+                    };
+                }
+                return null;
+            })
+                .filter(asset => asset !== null);
             if (matchingAssets.length !== 1) {
                 core.info(`All release assets: [${release.data.assets.map(asset => asset.name).join(', ')}]`);
                 throw new Error(`Expected exactly one matching asset, but found ${matchingAssets.length}`);
             }
             const asset = matchingAssets[0];
-            let archive = '';
-            const archiveMatch = asset.name.match(/\.(zip|tar\.gz)$/);
-            if (archiveMatch) {
-                archive = archiveMatch[1];
-            }
-            core.info(`Found release asset: '${asset.browser_download_url}'`);
-            const toolUrl = asset.browser_download_url;
+            const archive = asset.archive;
+            core.info(`Found release asset: '${asset.url}'`);
+            const toolUrl = asset.url;
             core.info(`Downloading ${tool} from ${toolUrl}`);
             const toolArchive = await tc.downloadTool(toolUrl);
             let extractPath = toolArchive;
@@ -33866,20 +33875,42 @@ async function main() {
                     break;
                 case 'tar.gz':
                     core.info(`Extracting tar.gz archive: ${toolArchive}`);
-                    extractPath = await tc.extractTar(toolArchive, '', ['xz', '--strip-components=1']);
+                    extractPath = await tc.extractTar(toolArchive);
                     break;
                 default:
                     throw new Error(`Unsupported archive format: ${archive}`);
             }
-            toolPath = await tc.cacheFile(`${extractPath}/${tool}`, tool, tool, version);
+            const toolPath = await findToolBinary(extractPath, tool);
+            if (!toolPath) {
+                throw new Error(`Tool binary '${tool}' not found in extracted path`);
+            }
+            cachePath = await tc.cacheFile(toolPath, tool, tool, version);
         }
-        core.addPath(toolPath);
+        core.addPath(cachePath);
         core.setOutput('version', version);
         core.info(`Installed ${tool} version ${version}`);
     }
     catch (err) {
         core.setFailed(`Action failed with error ${err} `);
     }
+}
+async function findToolBinary(dir, toolName) {
+    const files = await fs.promises.readdir(dir);
+    const toolRegex = new RegExp(`^${toolName}(_[a-z]+_[a-z0-9]+)?$`, 'i');
+    for (const file of files) {
+        const filePath = path.join(dir, file);
+        const stat = await fs.promises.stat(filePath);
+        if (stat.isDirectory()) {
+            const result = await findToolBinary(filePath, toolName);
+            if (result) {
+                return result;
+            }
+        }
+        else if (toolRegex.test(file)) {
+            return filePath;
+        }
+    }
+    return '';
 }
 
 })();
