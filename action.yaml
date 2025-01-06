@@ -1,6 +1,7 @@
 name: setup-generic-tool
 description: Setup arbitrary tools from GitHub Releases or tool cache
 author: isometry
+
 inputs:
   name:
     description: GitHub repository of the desired tool
@@ -13,9 +14,19 @@ inputs:
     description: Version of tool to install
     required: false
     default: latest
+
 outputs:
   version:
     description: Version of tool installed
+    value: ${{ steps.setup.outputs.version }}
+
 runs:
-  using: node20
-  main: dist/index.js
+  using: composite
+  steps:
+    - name: Run setup.sh
+      id: setup
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        "${GITHUB_ACTION_PATH}/setup.sh" "${INPUT_NAME}" "${INPUT_VERSION}" "${INPUT_TOOL}"
