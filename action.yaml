@@ -23,10 +23,13 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Run setup.sh
+    - name: Setup Tool
       id: setup
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        NAME: ${{ inputs.name }}
+        VERSION: ${{ inputs.version }}
+        TOOL: ${{ inputs.tool }}
       run: |
-        "${GITHUB_ACTION_PATH}/setup.sh" "${INPUT_NAME}" "${INPUT_VERSION}" "${INPUT_TOOL}"
+        "${GITHUB_ACTION_PATH}/setup.sh" "${NAME}" "${VERSION}" "${TOOL}"
