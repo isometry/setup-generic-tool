@@ -101,7 +101,7 @@ else
     fi
 
     # Find tool binary
-    TOOL_PATH=$(find . -type f -name "${TOOL_NAME}*" | head -n1)
+    TOOL_PATH=$(find . -type f -name "${TOOL_NAME}*" | grep -Ev '[.](tar[.]gz|zip)$' | head -n1)
     [[ -z "${TOOL_PATH}" ]] && error "Tool binary '${TOOL_NAME}' not found in extracted path"
 
     # Copy to cache directory
