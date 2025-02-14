@@ -1,0 +1,19 @@
+name: Test action
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    container:
+      image: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: apt update && apt install -y curl jq
+      - uses: ./
+        with:
+          name: cli/cli
+          tool: gh
+      - run: gh --version
