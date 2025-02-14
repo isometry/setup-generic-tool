@@ -54,11 +54,11 @@ case "${ARCH}" in
 esac
 
 invoke_curl() {
-    curl -sL \
+    curl -sfL \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${GH_TOKEN}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
-        "https://api.github.com/$?"
+        "https://api.github.com/$1"
 }
 
 # Get release information using GitHub CLI
@@ -98,7 +98,9 @@ else
 
     # Download and extract asset using gh cli
     info "Fetching ${ASSET_NAME} from ${OWNER}/${REPO}#${VERSION}"
-    gh release download "${VERSION}" -R "${OWNER}/${REPO}" -p "${ASSET_NAME}"
+    DOWNLOAD_URL=$(jq -r --arg asset "${ASSET_NAME}" '.assets[] | select(.name == $asset) | .browser_download_url' <<< "${RELEASE_DATA}")
+    echo "Download URL: ${DOWNLOAD_URL}"
+    curl -sSL -H "Authorization: token ${GH_TOKEN}" -o "${ASSET_NAME}" "${DOWNLOAD_URL}"
 
     if [[ "${ASSET_NAME}" == *.zip ]]; then
         info "Extracting ${ASSET_NAME}"
