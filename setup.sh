@@ -14,7 +14,7 @@ info() {
 }
 
 # Check for required commands
-command -v gh >/dev/null 2>&1 || error "GitHub CLI (gh) is required but not installed"
+command -v curl >/dev/null 2>&1 || error "curl is required but not installed"
 command -v jq >/dev/null 2>&1 || error "jq is required but not installed"
 
 # Get inputs
@@ -53,13 +53,21 @@ case "${ARCH}" in
         ;;
 esac
 
+invoke_curl() {
+    curl -sL \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${GH_TOKEN}" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "https://api.github.com/$?"
+}
+
 # Get release information using GitHub CLI
-if [ "${VERSION}" = "latest" ]; then
-    RELEASE_DATA=$(gh api "repos/${OWNER}/${REPO}/releases/latest")
+if [[ "${VERSION}" = "latest" ]]; then
+    RELEASE_DATA=$(invoke_curl "repos/${OWNER}/${REPO}/releases/latest")
     VERSION=$(jq -r '.tag_name' <<< "${RELEASE_DATA}")
     info "Resolved latest version: ${VERSION}"
 else
-    RELEASE_DATA=$(gh api "repos/${OWNER}/${REPO}/releases/tags/${VERSION}")
+    RELEASE_DATA=$(invoke_curl "repos/${OWNER}/${REPO}/releases/tags/${VERSION}")
 fi
 
 # Create cache directory
