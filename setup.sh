@@ -14,7 +14,7 @@ info() {
 }
 
 # Check for required commands
-command -v gh >/dev/null 2>&1 || error "GitHub CLI (gh) is required but not installed"
+command -v curl >/dev/null 2>&1 || error "curl is required but not installed"
 command -v jq >/dev/null 2>&1 || error "jq is required but not installed"
 
 # Get inputs
@@ -53,13 +53,28 @@ case "${ARCH}" in
         ;;
 esac
 
+v3_api_call() {
+    curl -sfL \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${GH_TOKEN}" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "https://api.github.com/$1"
+}
+
+download_release() {
+    local url="${1:?download url required}"
+    local out="${2:?asset name required}"
+    info "Downloading ${url} to ${out}"
+    curl -sSL -H "Authorization: token ${GH_TOKEN}" -o "${out}" "${url}"
+}
+
 # Get release information using GitHub CLI
-if [ "${VERSION}" = "latest" ]; then
-    RELEASE_DATA=$(gh api "repos/${OWNER}/${REPO}/releases/latest")
+if [[ "${VERSION}" = "latest" ]]; then
+    RELEASE_DATA=$(v3_api_call "repos/${OWNER}/${REPO}/releases/latest")
     VERSION=$(jq -r '.tag_name' <<< "${RELEASE_DATA}")
     info "Resolved latest version: ${VERSION}"
 else
-    RELEASE_DATA=$(gh api "repos/${OWNER}/${REPO}/releases/tags/${VERSION}")
+    RELEASE_DATA=$(v3_api_call "repos/${OWNER}/${REPO}/releases/tags/${VERSION}")
 fi
 
 # Create cache directory
@@ -85,23 +100,26 @@ else
 
     # Create temporary directory
     TMP_DIR=$(mktemp -d)
-    echo "Temporary directory: ${TMP_DIR}"
+    info "Temporary directory: ${TMP_DIR}"
     cd "${TMP_DIR}"
 
     # Download and extract asset using gh cli
     info "Fetching ${ASSET_NAME} from ${OWNER}/${REPO}#${VERSION}"
-    gh release download "${VERSION}" -R "${OWNER}/${REPO}" -p "${ASSET_NAME}"
+    DOWNLOAD_URL=$(jq -r --arg asset "${ASSET_NAME}" '.assets[] | select(.name == $asset) | .browser_download_url' <<< "${RELEASE_DATA}")
+    download_release "${DOWNLOAD_URL}" "${ASSET_NAME}"
 
     if [[ "${ASSET_NAME}" == *.zip ]]; then
         info "Extracting ${ASSET_NAME}"
         unzip -q "${ASSET_NAME}"
     elif [[ "${ASSET_NAME}" == *.tar.gz ]]; then
         info "Extracting ${ASSET_NAME}"
+        tar tzf "${ASSET_NAME}"
         tar xzf "${ASSET_NAME}"
     fi
 
     # Find tool binary
-    TOOL_PATH=$(find . -type f -name "${TOOL_NAME}*" | grep -Ev '[.](tar[.]gz|zip)$' | head -n1)
+    TOOL_PATH=$(find . -type f -name "${TOOL_NAME}*" -a \! -name "*.[0-9]" | grep -Ev '[.](tar[.]gz|zip)$' | head -n1)
+    info "Detected tool binary: ${TOOL_PATH}"
     [[ -z "${TOOL_PATH}" ]] && error "Tool binary '${TOOL_NAME}' not found in extracted path"
 
     # Copy to cache directory
