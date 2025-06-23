@@ -40,6 +40,12 @@ ASSET_NAME_INPUT="${4:-${TOOL_NAME}}"
 PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
+if [[ ${PLATFORM} == "darwin" ]]; then
+    PLATFORM_PATTERN="(darwin|macos)"
+else
+    PLATFORM_PATTERN="(${PLATFORM})"
+fi
+
 # Convert architecture to common formats
 case "${ARCH}" in
     "aarch64"|"arm64")
@@ -89,7 +95,7 @@ if [[ -d "${TOOL_CACHE_DIR}" ]]; then
     info "Found ${TOOL_NAME} ${VERSION} in ${TOOL_CACHE_DIR}"
 else
     info "Searching for ${TOOL_NAME} ${VERSION} for ${PLATFORM}/${ARCH}"
-    ASSET_PATTERN="^${ASSET_NAME_INPUT}.+${PLATFORM}.+${ARCH_PATTERN}([.](tar[.]gz|zip))?\$"
+    ASSET_PATTERN="^${ASSET_NAME_INPUT}.+${PLATFORM_PATTERN}.+${ARCH_PATTERN}([.](tar[.]gz|zip))?\$"
     mapfile -t ASSETS < <(jq -r --arg pattern "${ASSET_PATTERN}" '.assets[] | select(.name | test($pattern; "i")) | .name' <<< "${RELEASE_DATA}")
 
     : "${ASSETS:?No matching release asset found}"
