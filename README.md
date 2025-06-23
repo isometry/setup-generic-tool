@@ -17,6 +17,10 @@ The `isometry/setup-generic-tool` action is designed to make the use of generic 
 
 **Optional** Override tool name, if it doesn't match the repo name
 
+### `asset` input
+
+**Optional** Override asset name, if it doesn't match the tool name
+
 ### `version` input
 
 **Optional** Version of tool to install (default: `latest`; example: `v1.2.3`)
