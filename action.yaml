@@ -10,6 +10,10 @@ inputs:
     description: Override tool name, if it doesn't match the repo name
     required: false
     default: ""
+  asset:
+    description: Override asset name, if it doesn't match the tool name
+    required: false
+    default: ""
   version:
     description: Version of tool to install
     required: false
@@ -31,5 +35,6 @@ runs:
         NAME: ${{ inputs.name }}
         VERSION: ${{ inputs.version }}
         TOOL: ${{ inputs.tool }}
+        ASSET: ${{ inputs.asset }}
       run: |
-        "${GITHUB_ACTION_PATH}/setup.sh" "${NAME}" "${VERSION}" "${TOOL}"
+        "${GITHUB_ACTION_PATH}/setup.sh" "${NAME}" "${VERSION}" "${TOOL}" "${ASSET}"

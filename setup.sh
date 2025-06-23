@@ -31,6 +31,8 @@ IFS='/' read -r OWNER REPO <<< "${REPO_NAME}"
 # Set tool name if not provided as third argument
 TOOL_NAME="${3:-${REPO}}"
 
+ASSET_NAME_INPUT="${4:-${TOOL_NAME}}"
+
 # Validate tool name
 [[ ! "${TOOL_NAME}" =~ ^[-A-Za-z0-9]+$ ]] && error "Invalid tool name"
 
@@ -87,7 +89,7 @@ if [[ -d "${TOOL_CACHE_DIR}" ]]; then
     info "Found ${TOOL_NAME} ${VERSION} in ${TOOL_CACHE_DIR}"
 else
     info "Searching for ${TOOL_NAME} ${VERSION} for ${PLATFORM}/${ARCH}"
-    ASSET_PATTERN="^${TOOL_NAME}.+${PLATFORM}.+${ARCH_PATTERN}([.](tar[.]gz|zip))?\$"
+    ASSET_PATTERN="^${ASSET_NAME_INPUT}.+${PLATFORM}.+${ARCH_PATTERN}([.](tar[.]gz|zip))?\$"
     mapfile -t ASSETS < <(jq -r --arg pattern "${ASSET_PATTERN}" '.assets[] | select(.name | test($pattern; "i")) | .name' <<< "${RELEASE_DATA}")
 
     : "${ASSETS:?No matching release asset found}"
