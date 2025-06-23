@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Enable debug mode if RUNNER_DEBUG is 1
+[[ "${RUNNER_DEBUG:-0}" == "1" ]] && set -x
+
 # Function to print error and exit
 error() {
     echo "ERROR: $1" >&2
