@@ -124,7 +124,6 @@ else
         unzip -q "${ASSET_NAME}"
     elif [[ "${ASSET_NAME}" == *.tar.gz ]]; then
         info "Extracting ${ASSET_NAME}"
-        tar tzf "${ASSET_NAME}"
         tar xzf "${ASSET_NAME}"
     fi
 
