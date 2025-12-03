@@ -4,7 +4,9 @@ set -euo pipefail
 
 # Function to run commands only in debug mode
 debug() {
-    [[ "${RUNNER_DEBUG:-0}" == "1" ]] && "$@"
+    if [[ "${RUNNER_DEBUG:-0}" == "1" ]]; then
+        "$@" | sed 's/^/DEBUG: /g'
+    fi
 }
 
 # Enable debug mode if RUNNER_DEBUG is 1
