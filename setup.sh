@@ -121,9 +121,10 @@ else
 
     if [[ "${ASSET_NAME}" == *.zip ]]; then
         info "Extracting ${ASSET_NAME}"
-        unzip -q "${ASSET_NAME}"
+        [[ "${RUNNER_DEBUG:-0}" == "1" ]] && unzip "${ASSET_NAME}" || unzip -q "${ASSET_NAME}"
     elif [[ "${ASSET_NAME}" == *.tar.gz ]]; then
         info "Extracting ${ASSET_NAME}"
+        [[ "${RUNNER_DEBUG:-0}" == "1" ]] && tar tzf "${ASSET_NAME}"
         tar xzf "${ASSET_NAME}"
     fi
 
