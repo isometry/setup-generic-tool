@@ -2,8 +2,15 @@
 
 set -euo pipefail
 
+# Function to run commands only in debug mode
+debug() {
+    if [[ "${RUNNER_DEBUG:-0}" == "1" ]]; then
+        "$@" | sed 's/^/DEBUG: /g'
+    fi
+}
+
 # Enable debug mode if RUNNER_DEBUG is 1
-[[ "${RUNNER_DEBUG:-0}" == "1" ]] && set -x
+debug set -x
 
 # Function to print error and exit
 error() {
@@ -121,10 +128,11 @@ else
 
     if [[ "${ASSET_NAME}" == *.zip ]]; then
         info "Extracting ${ASSET_NAME}"
+        debug unzip -l "${ASSET_NAME}"
         unzip -q "${ASSET_NAME}"
     elif [[ "${ASSET_NAME}" == *.tar.gz ]]; then
         info "Extracting ${ASSET_NAME}"
-        tar tzf "${ASSET_NAME}"
+        debug tar tzf "${ASSET_NAME}"
         tar xzf "${ASSET_NAME}"
     fi
 
